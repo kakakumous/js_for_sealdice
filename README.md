@@ -1,0 +1,2 @@
+# js_for_sealdice
+为海豹骰编写的JavaScript扩展文件
