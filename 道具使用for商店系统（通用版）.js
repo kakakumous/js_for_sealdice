@@ -215,7 +215,7 @@ class Rucksack {
                 seal.vars.intSet(mctx, effectType,new_effect);
             }
         }else{//状态道具 多用叠时间
-            const timestamp = Date.parse(new Date());//秒级时间戳
+            const timestamp = Date.parse(new Date())/1000;//10位 秒级时间戳
 
             let upHours=itemOverview.upTime*quantity;
             //初始化没有的最大值=7(限时效果最多堆叠7层)
