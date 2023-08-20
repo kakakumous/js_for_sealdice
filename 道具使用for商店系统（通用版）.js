@@ -78,7 +78,9 @@ class ItemInfo {
         }
         let arr = [];
         for (let i=(page-1)*ITEMS_PER_PAGE;i<page*ITEMS_PER_PAGE;i++) {
-            console.log(this.itemInfo[i].name);
+            if(this.itemInfo[i] === undefined){
+                break;
+            }
             let str=`~ ${this.itemInfo[i].name}-影响变量: ${this.itemInfo[i].effectType}${this.itemInfo[i].effect}`;
             if(this.itemInfo[i].ifStatus==1)str=str+`持续${this.itemInfo[i].upTime}小时`;
             arr.push(str);
