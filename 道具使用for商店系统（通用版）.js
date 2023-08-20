@@ -434,7 +434,7 @@ cmduseItem.solve = (ctx, msg, args) => {
     let name = args.getArgN(1);
     let quantity = 1;
     if(!isNaN(args.getArgN(2))){
-        quantity = parseInt(args.getArgN(2));
+        quantity = parseInt(args.getArgN(2))||1;
     }
 
     const mctx = seal.getCtxProxyFirst(ctx, args)||ctx;
@@ -477,7 +477,7 @@ cmdcheckValue.solve = (ctx, msg, args) => {
         return seal.ext.newCmdExecuteResult(true);
     }
     try {
-        seal.replyToSender(ctx, msg,seal.vars.intGet(mctx, name)[0]);
+        seal.replyToSender(ctx, msg,`${mctx.player.name}的${name.slice(2,name.length)}值为：`+seal.vars.intGet(mctx, name)[0]);
     } catch (error) {
         seal.replyToSender(ctx, msg, `没有找到这条属性喵。`);//不触发 找不到都返回0
     }
@@ -494,11 +494,11 @@ cmdgetItem.solve = (ctx, msg, args) => {
         let ret = seal.ext.newCmdExecuteResult(true);
         ret.showHelp = true;
         return ret;
-    }
+    }s
     let name = args.getArgN(1);
     let quantity = 1;
     if(!isNaN(args.getArgN(2))){
-        quantity = parseInt(args.getArgN(2));
+        quantity = parseInt(args.getArgN(2))||1;
     }
 
     const mctx = seal.getCtxProxyFirst(ctx, args)||ctx;
