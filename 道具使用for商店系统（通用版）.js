@@ -494,7 +494,7 @@ cmdgetItem.solve = (ctx, msg, args) => {
         let ret = seal.ext.newCmdExecuteResult(true);
         ret.showHelp = true;
         return ret;
-    }s
+    }
     let name = args.getArgN(1);
     let quantity = 1;
     if(!isNaN(args.getArgN(2))){
