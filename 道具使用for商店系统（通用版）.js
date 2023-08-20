@@ -2,7 +2,7 @@
 // @name         道具使用for商店系统
 // @author       kakakumous
 // @version      1.0.0
-// @description  自用的道具使用dlc 高度参考并引用步棋商店系统插件（扩展的扩展.jpg,数据库共享） 背包类复制粘贴+新增方法use
+// @description  自用的道具使用dlc 高度参考并引用步棋商店系统插件（扩展的扩展.jpg,数据库共享） 详情请到github链接或直接查看脚本
 // @timestamp    1692412501
 // 2023-08-19 10:35:01
 // @license      MIT
@@ -168,11 +168,11 @@ class Rucksack {
         if(itemOverview.ifStatus==0){//非状态道具 多用叠数值
             let effectType=itemOverview.effectType;
             let effect=itemOverview.effect;
-            console.log(`试图初始化没有的变量=0`);
+            //初始化没有的变量=0
             if(seal.vars.intGet(mctx, effectType)[1]==false){
                 seal.vars.intSet(mctx, effectType,0);
             }
-            console.log(`试图初始化没有的最大值=-1（无上限）`);
+            //初始化没有的最大值=-1（无上限）
             if(seal.vars.intGet(mctx, effectType+`_MAX`)[1]==false){
                 seal.vars.intSet(mctx, effectType+`_MAX`,-1);
                 console.log(`初始化成功`);
@@ -407,10 +407,11 @@ cmduseItem.solve = (ctx, msg, args) => {
     let name = args.getArgN(1);
     let quantity = parseInt(args.getArgN(2))||1;
 
-    const mctx = getCtxProxyFirst(ctx, msg)||ctx;//不好用 获取不到 有空自己写一个反解cq码呜呜呜
+    //const mctx = getCtxProxyFirst(ctx, msg)||ctx;//不好用 获取不到 有空自己写一个反解cq码呜呜呜
+    const mctx = ctx;
     console.log(`道具生效于：`+mctx.player.userId);
 
-    if (!name || isNaN(quantity)||quantity>0) {
+    if (!name || isNaN(quantity) || quantity<=0) {
         seal.replyToSender(ctx, msg, "参数错误。用法：.使用 <名称> <数量(大于0)>");
         return seal.ext.newCmdExecuteResult(true);
     }
