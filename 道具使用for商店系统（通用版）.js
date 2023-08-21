@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         道具使用for商店系统
 // @author       kakakumous
-// @version      1.0.1
-// @description  【尚未进行全面测试，发现bug欢迎git留言】自用的道具使用dlc 高度参考并引用步棋商店系统插件（扩展的扩展.jpg,数据库共享） 骰主使用教程请到github链接查看readme
+// @version      1.0.2
+// @description  【尚未全面测试，发现bug欢迎git留言】自用的道具使用dlc，高度参考并引用步棋商店系统插件，建议配合个人魔改使用（扩展的扩展.jpg,数据库共享，升级直接覆盖并删除旧文件） 骰主使用教程请到github链接查看readme
 // @timestamp    1692412501
 // 2023-08-19 10:35:01
 // @license      MIT
@@ -14,10 +14,14 @@ if (!ext) {
     ext = seal.ext.new("shop", "檀轶步棋", "1.0.0");
     seal.ext.register(ext);
 }
-//在此定义骰主.展示道具时每页展示的道具数
-const ITEMS_PER_PAGE=7;
-//在此定义限时buff的最大堆叠层数
+//在此定义骰主.展示道具时每页展示的道具数 跟随ItemInfo
+const ITEMS_PER_PAGE=10;
+//在此定义限时buff的最大堆叠层数 跟随ItemInfo
 const INIT_MAX_STATUS=7;
+
+//目前用不上的东西↓
+const BASIC_BACKPACK_MAXITEMS=20;//基础背包格数 跟随Rucksack
+const ITEM_MAX_NUM=999;//最大堆叠数量 跟随Rucksack
 
 const UseErrno = {
     1: "背包中无此物品",
@@ -77,10 +81,11 @@ class ItemInfo {
             return "这一页没有道具信息";
         }
         let arr = [];
-        for (let i=(page-1)*ITEMS_PER_PAGE;i<page*ITEMS_PER_PAGE;i++) {
+        for (let i = (page-1)*ITEMS_PER_PAGE ; i < page*ITEMS_PER_PAGE ; i++) {
             if(this.itemInfo[i] === undefined){
                 break;
             }
+            console.log(this.itemInfo[i].name);
             let str=`~ ${this.itemInfo[i].name}-影响变量: ${this.itemInfo[i].effectType}${this.itemInfo[i].effect}`;
             if(this.itemInfo[i].ifStatus==1)str=str+`持续${this.itemInfo[i].upTime}小时`;
             arr.push(str);
@@ -90,17 +95,17 @@ class ItemInfo {
 }
 class Rucksack {
     items;
+    size;
     userId;
     ctx;
     money;
-    
     constructor(ctx) {
         let itemAll = JSON.parse(ext.storageGet("backpacks") || "{}");
         this.userId = ctx.player.userId;
         this.ctx = ctx;
+        this.size = BASIC_BACKPACK_MAXITEMS + seal.vars.intGet(ctx, `$m额外背包位`)[0];
         this.items = itemAll[this.userId] ? itemAll[this.userId]["backpack"] : [];
-        this.money = itemAll[this.userId] ? itemAll[this.userId]["money"] : seal.vars.intGet(ctx, `$m金币`)[0];
-        
+        this.money = seal.vars.intGet(ctx, `$m金币`)[0];
     }
     save() {
         let itemAll = JSON.parse(ext.storageGet("backpacks") || "{}");
@@ -111,6 +116,12 @@ class Rucksack {
         itemAll[this.userId]["money"] = this.money;
         seal.vars.intSet(this.ctx, "$m金币", this.money);
         ext.storageSet("backpacks", JSON.stringify(itemAll));
+    }
+    sameValue(){//同步个人变量中影响背包的变量
+        
+        this.size =BASIC_BACKPACK_MAXITEMS + seal.vars.intGet(this.ctx, `$m额外背包位`)[0];
+        this.money = seal.vars.intGet(this.ctx, `$m金币`)[0];
+        
     }
     getOverview(name) {
         for (let [i, v] of this.items.entries()) {
@@ -123,14 +134,16 @@ class Rucksack {
     placeItem(item) {
         for (let [i, v] of this.items.entries()) {
             if (v.name === item.name) {
+                if(this.items[i].quantity + item.quantity>ITEM_MAX_NUM){return 7;}
                 this.items[i].quantity += item.quantity;
                 this.save();
-                return;
+                return 0;
             }
         }
-        console.log("added");
+        if(this.items.length>=this.size){return 6;}
         this.items.push(item);
         this.save();
+        return 0;
     }
     removeItem(name, quantity = 1) {
         for (let [i, v] of this.items.entries()) {
@@ -154,16 +167,6 @@ class Rucksack {
                 return;
             }
         }
-    }
-    present() {
-        if (this.items.length <= 0) {
-            return "空空如也";
-        }
-        let arr = [];
-        for (let i of this.items) {
-            arr.push(`- ${i.name}  数量: ${i.quantity}`);
-        }
-        return arr.join("\n");
     }
     use(itemInfo, name, quantity, mctx){
         let sackOverview=this.getOverview(name);
@@ -216,6 +219,7 @@ class Rucksack {
             }else{
                 seal.vars.intSet(mctx, effectType,new_effect);
             }
+            console.log(effectType+`=`+seal.vars.intGet(mctx, effectType)[0]);
         }else{//状态道具 多用叠时间
             const timestamp = Date.parse(new Date())/1000;//10位 秒级时间戳
 
@@ -257,6 +261,7 @@ class Rucksack {
             console.log(effectType+`=`+seal.vars.intGet(mctx, effectType)[0]);
             seal.vars.intSet(mctx, effectType+`_upTime`,timestamp+upHours*3600);
         }
+        this.sameValue();
         this.removeItem(name, quantity);
         return 0;
     }
@@ -463,7 +468,7 @@ ext.cmdMap["使用"] = cmduseItem;
 
 //=======================================================================================查错用指令 不出问题的情况下不推荐使用
 let cmdcheckValue = seal.ext.newCmdItemInfo();
-cmdcheckValue.name = "checkValue";
+cmdcheckValue.name = "updateValue";
 cmdcheckValue.help = ".查看属性 <名称（例：$mHP）> <目标（at,为空则默认为自己）>//查看属性";
 cmdcheckValue.allowDelegate = true;
 cmdcheckValue.solve = (ctx, msg, args) => {
@@ -514,8 +519,39 @@ cmdgetItem.solve = (ctx, msg, args) => {
     }
 
     let backpack = new Rucksack(mctx);
+    backpack.sameValue(ctx);
     backpack.placeItem({name, quantity});
     seal.replyToSender(ctx, msg, `强制向${mctx.player.name}的背包里塞了${quantity}个${name}`);
     return seal.ext.newCmdExecuteResult(true);
 };
 ext.cmdMap["强制获取"] = cmdgetItem;
+
+let cmdupdateValue = seal.ext.newCmdItemInfo();
+cmdupdateValue.name = "updateValue";
+cmdupdateValue.help = ".强制更改 <名称（例：$mHP）> <数值> <目标（at,为空则默认为自己）>//更改属性";
+cmdupdateValue.allowDelegate = true;
+cmdupdateValue.solve = (ctx, msg, args) => {
+    if (args.getArgN(1) === "help") {
+        let ret = seal.ext.newCmdExecuteResult(true);
+        ret.showHelp = true;
+        return ret;
+    }
+    if (ctx.privilegeLevel < 100) {
+        seal.replyToSender(ctx, msg, seal.formatTmpl(ctx, "无权限"));
+        return seal.ext.newCmdExecuteResult(true);
+    }
+    let name = args.getArgN(1);
+    let value = 0;
+    if(!isNaN(args.getArgN(2))){
+        value = parseInt(args.getArgN(2))||0;
+    }    
+    const mctx = seal.getCtxProxyFirst(ctx, args)||ctx;
+        if (!name) {
+        seal.replyToSender(ctx, msg, "参数错误。用法：.查看属性 <名称> <目标（at,为空则默认为自己）>");
+        return seal.ext.newCmdExecuteResult(true);
+    }
+    seal.vars.intSet(mctx,name,value);
+    seal.replyToSender(ctx, msg, "强制更改成功！");
+    return seal.ext.newCmdExecuteResult(true);
+};
+ext.cmdMap["强制更改"] = cmdupdateValue;
