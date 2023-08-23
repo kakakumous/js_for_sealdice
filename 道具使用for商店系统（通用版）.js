@@ -67,7 +67,7 @@ class ItemInfo {
     deleteItem(name) {
         for (let [i, v] of this.itemInfo.entries()) {
             if (v.name === name) {
-                this.itemInfo.splice(i);
+                this.itemInfo.splice(i,1);
                 this.save();
                 return;
             }
@@ -149,7 +149,7 @@ class Rucksack {
         for (let [i, v] of this.items.entries()) {
             if (v.name === name) {
                 if (quantity >= v.quantity) {
-                    this.items.splice(i);
+                    this.items.splice(i,1);
                 }
                 else {
                     this.items[i].quantity -= quantity;
@@ -162,7 +162,7 @@ class Rucksack {
     deleteItem(name) {
         for (let [i, v] of this.items.entries()) {
             if (v.name === name) {
-                this.items.splice(i);
+                this.items.splice(i,1);
                 this.save();
                 return;
             }
@@ -335,7 +335,7 @@ ext.cmdMap["删除道具信息"] = cmddelItemInfo;
 
 let cmdlistItemInfo = seal.ext.newCmdItemInfo();
 cmdlistItemInfo.name = "listItemInfo";
-cmdlistItemInfo.help = ".展示道具 <页数（为空默认为1）> //仅限骰主使用 按页数查询";
+cmdlistItemInfo.help = ".道具一览 <页数（为空默认为1）> //仅限骰主使用 按页数查询";
 cmdlistItemInfo.solve = (ctx, msg, args) => {
     if (args.getArgN(1) === "help") {
         let ret = seal.ext.newCmdExecuteResult(true);
@@ -360,7 +360,7 @@ cmdlistItemInfo.solve = (ctx, msg, args) => {
 
     return seal.ext.newCmdExecuteResult(true);
 };
-ext.cmdMap["展示道具"] = cmdlistItemInfo;
+ext.cmdMap["道具一览"] = cmdlistItemInfo;
 
 let cmdsearchItemInfo = seal.ext.newCmdItemInfo();
 cmdsearchItemInfo.name = "searchItemInfo";
