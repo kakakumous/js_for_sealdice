@@ -1,5 +1,5 @@
 # js_for_sealdice
-为[海豹骰](https://github.com/sealdice/sealdice-core)编写的JavaScript扩展文件仓库。
+kakakumous为[海豹骰](https://github.com/sealdice/sealdice-core)编写的JavaScript扩展文件仓库。
 ## 已完成扩展
 ### 道具使用for商店系统（通用版）.js
 测试阶段，当前最新版本为1.0.2refine，1.1预计会成为一个稳定版本，1.2新功能开发中（支持多次使用后销毁的道具和永久道具使用带冷却时间），欢迎在文件下留言反馈问题和bug。
