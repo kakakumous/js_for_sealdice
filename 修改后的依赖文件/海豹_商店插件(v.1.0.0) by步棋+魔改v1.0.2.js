@@ -4,11 +4,11 @@
 // @version      1.0.2
 // @timestamp    1686102732
 // @license      MIT
-// @description  指令有：上架、下架、购买、出售、丢弃、展示|在原插件1.0.0的基础上修正数量堆叠问题，新增数据同步，修改金币交互逻辑（比如在创建背包后签到获取的金币可以同步进背包）并增加背包格数和背包物品堆叠上限（防止物品过多文本太长 也许将来改个分页） 广告时间：道具使用for商店系统
+// @description  指令有：上架、下架、购买、出售、丢弃、展示|在原插件v1.0.0的基础上修正数量堆叠问题，新增数据同步，修改金币交互逻辑（比如在创建背包后签到获取的金币可以同步进背包）并增加背包格数和背包物品堆叠上限（防止物品过多文本太长 也许将来改个分页） 广告时间：道具使用for商店系统
 // @homepageURL  https://github.com/Verplitic
 // ==/UserScript==
 
-const RETIRE=0.8;//售出店内已有物品打折比例 跟随Shop
+const RETIRE=1;//售出店内已有物品打折比例 跟随Shop
 const BASIC_BACKPACK_MAXITEMS=20;//基础背包格数 跟随Rucksack
 const ITEM_MAX_NUM=999;//最大堆叠数量 跟随Rucksack
 
@@ -57,7 +57,7 @@ class Shop {
         for (let [i, v] of this.goods.entries()) {
             if (v.name === name) {
                 if (quantity >= v.quantity) {
-                    this.goods.splice(i);
+                    this.goods.splice(i,1);
                 }
                 else {
                     this.goods[i].quantity -= quantity;
@@ -70,7 +70,7 @@ class Shop {
     deleteItem(name) {
         for (let [i, v] of this.goods.entries()) {
             if (v.name === name) {
-                this.goods.splice(i);
+                this.goods.splice(i,1);
                 this.save();
                 return;
             }
@@ -143,7 +143,7 @@ class Rucksack {
         for (let [i, v] of this.items.entries()) {
             if (v.name === name) {
                 if (quantity >= v.quantity) {
-                    this.items.splice(i);
+                    this.items.splice(i,1);
                 }
                 else {
                     this.items[i].quantity -= quantity;
@@ -156,16 +156,13 @@ class Rucksack {
     deleteItem(name) {
         for (let [i, v] of this.items.entries()) {
             if (v.name === name) {
-                this.items.splice(i);
+                this.items.splice(i,1);
                 this.save();
                 return;
             }
         }
     }
     present() {
-        if (this.items.length <= 0) {
-            return "空空如也";
-        }
         let arr = [];
         arr.push(`【物品栏：${this.items.length}/${this.size}】`);
         for (let i of this.items) {
