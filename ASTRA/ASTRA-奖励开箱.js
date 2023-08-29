@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         奖励开箱AS
+// @name         ASTRA-奖励开箱
 // @author       kakakumous
 // @version      1.0.0
 // @description  ASTRA-奖励开箱（Trophy&Rucksack），与道具使用和商店系统共享数据库

@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         商店系统AS
+// @name         ASTRA-商店系统
 // @author       檀轶步棋|AS:kakakumous
 // @version      1.0.2
 // @timestamp    1686102732

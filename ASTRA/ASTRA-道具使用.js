@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         道具使用for商店系统AS
+// @name         ASTRA-道具使用
 // @author       kakakumous
 // @version      1.0.2
-// @description  ASTRA-道具使用（ItemInfo&Rucksack）
+// @description  ItemInfo&Rucksack
 // @timestamp    1692412501
 // 2023-08-19 10:35:01
 // @license      MIT
