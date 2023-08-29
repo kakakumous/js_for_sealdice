@@ -119,11 +119,11 @@ class Gacha{
                 return moneyGachaResno[5]+`你获得了${gainCrystal}个魔力水晶。`;
             }
             if(gainType>=93 && gainType<97){
-                seal.vars.intSet(this.ctx, "$m七月装备箱", seal.vars.intGet(this.ctx, `$m七月道具箱`)[0]+1);
+                seal.vars.intSet(this.ctx, "$m七月装备箱", seal.vars.intGet(this.ctx, `$m七月装备箱`)[0]+1);
                 return moneyGachaResno[6];
             }
             if(gainType>=74 && gainType<93){
-                seal.vars.intSet(this.ctx, "$m过盈回赠", seal.vars.intGet(this.ctx, `$m过盈回赠`)[0]+1);
+                seal.vars.intSet(this.ctx, "$m七月道具箱", seal.vars.intGet(this.ctx, `$m七月道具箱`)[0]+1);
                 return moneyGachaResno[7];
             }
             if(gainType>=73 && gainType<74){
