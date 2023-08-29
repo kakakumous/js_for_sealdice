@@ -2,7 +2,7 @@
 // @name         ASTRA-祈愿
 // @author       kakakumous
 // @version      1.0.0
-// @description  单抽：祈求七月之力 七连：祈求银辉七月之力|*祈求魔星之力 祈求粉晶七月之力
+// @description  单抽：祈求七月之力 七连：祈求银辉七月之力|*祈求魔星之力 *祈求粉晶魔星之力
 // @timestamp    1693125392
 // 2023-08-27 16:36:32
 // @license      MIT
