@@ -363,10 +363,10 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function descValueArr(arr){//行首元素降序
-    if(arr.length <= 1){return arr;}
-    for (let i = 0; i < arr.length - 1; i++) {
-        for (let j = 0; j < arr.length - 1 - i; j++) {
-            if (arr[j][0] < arr[j + 1][0]) {
+    if(arr.length <= 1)return arr;
+    for(let i = 0; i < arr.length - 1; i++){
+        for(let j = 0; j < arr.length - 1 - i; j++){
+            if(arr[j][0] < arr[j + 1][0]){
                 t = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = t;
