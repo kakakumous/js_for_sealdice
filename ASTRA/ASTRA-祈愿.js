@@ -42,6 +42,7 @@ class Gacha{
     totalCrystalGacha;
 
     totalNoGainInMoney;
+    totalSsrInMoney;
 
     chainNoGainInMoney;//日清零&获取清零
     chainNoRareInCrystal;//获取清零
@@ -63,6 +64,7 @@ class Gacha{
         this.totalMoneyGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["totalMoneyGacha"]:0;
         this.totalCrystalGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["totalCrystalGacha"]:0;
         this.totalNoGainInMoney = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["totalNoGainInMoney"]:seal.vars.intGet(ctx, `$m水漂累计`)[0];
+        this.totalSsrInMoney = gachaInfoAll[this.userId]["totalSsrInMoney"] ? gachaInfoAll[this.userId]["totalSsrInMoney"]:seal.vars.intGet(ctx, `$m银辉馈赠`)[0];//增补的数据
         //保底
         this.chainNoGainInMoney = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["chainNoGainInMoney"]:seal.vars.intGet(ctx, `$m今日连续水漂次数`)[0];
         this.chainNoRareInCrystal = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["chainNoRareInCrystal"]:0;
@@ -81,6 +83,7 @@ class Gacha{
         gachaInfoAll[this.userId]["todayMoneyGacha"] = this.todayMoneyGacha;
         gachaInfoAll[this.userId]["totalMoneyGacha"] = this.totalMoneyGacha;
         gachaInfoAll[this.userId]["totalNoGainInMoney"] = this.totalNoGainInMoney;
+        gachaInfoAll[this.userId]["totalSsrInMoney"] = this.totalSsrInMoney;
         gachaInfoAll[this.userId]["chainNoGainInMoney"] = this.chainNoGainInMoney;
         gachaInfoAll[this.userId]["noGainInMoneyDays"] = this.noGainInMoneyDays;
         gachaInfoAll[this.userId]["money"] = this.money;
@@ -112,6 +115,7 @@ class Gacha{
             this.chainNoGainInMoney=0;
             let gainType = getRandomInt(0,100);
             if(gainType == 100){
+                this.totalSsrInMoney++;
                 seal.vars.intSet(this.ctx, "$m银辉馈赠", seal.vars.intGet(this.ctx, `$m银辉馈赠`)[0]+1);
                 return moneyGachaResno[4];
             }
@@ -141,12 +145,13 @@ class Gacha{
         }
     }
     addNoGainInMoneyDays(res){    
-        this.noGainInMoneyDays+=1;
+        this.noGainInMoneyDays += 1;
         res+=`\f`+moneyGachaResno[10];
         if(this.noGainInMoneyDays%MAX_MONEYGACHA_PERDAY==0){
             seal.vars.intSet(this.ctx, "$m过盈回赠", seal.vars.intGet(this.ctx, `$m过盈回赠`)[0]+1);
             res+=`\f`+moneyGachaResno[11];
         }
+        this.chainNoGainInMoney = 0 ;
         return res;
     }
     multiMoneyGacha(){
@@ -155,24 +160,23 @@ class Gacha{
             return moneyGachaResno[1];//钱+额外次数不足拦截
         }
         const timestamp = (Date.parse(new Date())/1000);
-        if(parseInt((this.lastMoneyGacha+28800)/86400)!=parseInt((timestamp+28800)/86400)){//判断newday
-            this.todayMoneyGacha=GACHA_MULTI;
+        if(parseInt((this.lastMoneyGacha+28800)/86400)!=parseInt((timestamp+28800)/86400)){//判断newday 刷新
+            this.todayMoneyGacha=0;
             this.chainNoGainInMoney=0;
-        }else{
-            this.todayMoneyGacha+=GACHA_MULTI;
         }
-        if(this.todayMoneyGacha>MAX_MONEYGACHA_PERDAY&&extraChance<GACHA_MULTI){
+
+        if(this.todayMoneyGacha+GACHA_MULTI>MAX_MONEYGACHA_PERDAY && extraChance<GACHA_MULTI){
             return moneyGachaResno[2];//今日抽卡上限+额外次数不足拦截
         }
-        
         //扣除消耗
-        if(this.money<GACHA_MULTI*MONEY_COST){
-            seal.vars.intSet(this.ctx, "$m月光币抽卡次数", extraChance-GACHA_MULTI);
+        if(this.money>=GACHA_MULTI*MONEY_COST && this.todayMoneyGacha+GACHA_MULTI<=MAX_MONEYGACHA_PERDAY){//1*1 钱且没有达到上限 扣钱加次数
+            this.todayMoneyGacha+=GACHA_MULTI;
+            this.money-=GACHA_MULTI*MONEY_COST;
         }else{
-            this.money -= GACHA_MULTI*MONEY_COST;
+            seal.vars.intSet(this.ctx, "$m月光币抽卡次数", extraChance-GACHA_MULTI);
         }
-        this.totalMoneyGacha += GACHA_MULTI;
         //开始抽卡流程
+        this.totalMoneyGacha += GACHA_MULTI;
         this.lastMoneyGacha = timestamp;
         let luckLevel = CalcLuckLevel(this.ctx);
         let gainRate = GainRate(luckLevel);
@@ -181,7 +185,7 @@ class Gacha{
         for(let i=0;i<MAX_MONEYGACHA_PERDAY;i++){
             resStr += `\n`+this.moneyGachaCore(gainRate);
         }
-        if(this.chainNoGainInMoney == MAX_MONEYGACHA_PERDAY){
+        if(this.chainNoGainInMoney >= MAX_MONEYGACHA_PERDAY){
             resStr = this.addNoGainInMoneyDays(resStr);
         }
         this.saveMoneyGacha();
@@ -193,24 +197,22 @@ class Gacha{
             return moneyGachaResno[1];//钱+额外次数不足拦截
         }
         const timestamp = (Date.parse(new Date())/1000);
-        if(parseInt((this.lastMoneyGacha+28800)/86400)!=parseInt((timestamp+28800)/86400)){//判断newday
-            this.todayMoneyGacha=1;
+        if(parseInt((this.lastMoneyGacha+28800)/86400)!=parseInt((timestamp+28800)/86400)){//判断newday 刷新
+            this.todayMoneyGacha=0;
             this.chainNoGainInMoney=0;
-        }else{
-            this.todayMoneyGacha+=1;
         }
-        if(this.todayMoneyGacha>MAX_MONEYGACHA_PERDAY&&extraChance<1){
+        if(this.todayMoneyGacha+1>MAX_MONEYGACHA_PERDAY && extraChance<1){
             return moneyGachaResno[2];//今日抽卡上限+额外次数不足拦截
         }
-        
         //扣除消耗
-        if(this.money<GACHA_MULTI*MONEY_COST){
-            seal.vars.intSet(this.ctx, "$m月光币抽卡次数", extraChance-1);
+        if(this.money>=MONEY_COST && this.todayMoneyGacha+1<=MAX_MONEYGACHA_PERDAY){//1*1 钱且没有达到上限 扣钱加次数
+            this.todayMoneyGacha+=1;
+            this.money-=MONEY_COST;
         }else{
-            this.money -= MONEY_COST;
+            seal.vars.intSet(this.ctx, "$m月光币抽卡次数", extraChance-1);
         }
-        this.totalMoneyGacha += 1;
         //开始抽卡流程
+        this.totalMoneyGacha += 1;
         this.lastMoneyGacha = timestamp;
         let luckLevel = CalcLuckLevel(this.ctx);
         let gainRate = GainRate(luckLevel);
@@ -307,12 +309,20 @@ if (!ext) {
             let gachaInfoAll = JSON.parse(ext.storageGet("gachaInfo") || "{}");
             let gachaInfo = gachaInfoAll[ctx.player.userId];
             if(!gachaInfo){
-                seal.replyToSender(ctx, msg, ctx.player.name+`还没有使用月光币进行祈求过。`);
+                seal.replyToSender(ctx, msg, ctx.player.name+`您还没有使用月光币进行祈求过。`);
                 return seal.ext.newCmdExecuteResult(true);
             }
-            res = `尊敬的客户<`+gachaInfo.name+`>，您的查询七月获取统计业务回复如下：\n~水漂/祈愿数：`+gachaInfo.totalNoGainInMoney+`/`+gachaInfo.totalMoneyGacha;
-            let rate = gachaInfo.totalNoGainInMoney/gachaInfo.totalMoneyGacha*100;
-            res += `\n~水漂率`+rate.toFixed(2)+`%`;
+
+            let res = `尊敬的客户<`+gachaInfo.name+`>，您的查询七月获取统计业务回复如下：\n~累计进行七月之力祈愿：`+gachaInfo.totalMoneyGacha+`次`;
+
+            res += `\n~累计打水漂`+gachaInfo.totalNoGainInMoney+`次`;
+            let realGainrate = gachaInfo.totalNoGainInMoney/gachaInfo.totalMoneyGacha*100;
+            res += `\n 水漂率`+realGainrate.toFixed(2)+`%`;
+
+            res += `\n~累计获取银辉馈赠`+gachaInfo.totalSsrInMoney+`个`;
+            let realSsrRate = gachaInfo.totalSsrInMoney/gachaInfo.totalMoneyGacha*100;
+            res += `\n 馈赠获取率`+realSsrRate.toFixed(2)+`%`;
+
             res += `\n这样就可以了吗？不继续努力的话可是会被拉开距离的哦？`;
             seal.replyToSender(ctx, msg, res);
         }
@@ -363,10 +373,10 @@ function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 function descValueArr(arr){//行首元素降序
-    if(arr.length <= 1)return arr;
-    for(let i = 0; i < arr.length - 1; i++){
-        for(let j = 0; j < arr.length - 1 - i; j++){
-            if(arr[j][0] < arr[j + 1][0]){
+    if(arr.length <= 1){return arr;}
+    for (let i = 0; i < arr.length - 1; i++) {
+        for (let j = 0; j < arr.length - 1 - i; j++) {
+            if (arr[j][0] < arr[j + 1][0]) {
                 t = arr[j];
                 arr[j] = arr[j + 1];
                 arr[j + 1] = t;
