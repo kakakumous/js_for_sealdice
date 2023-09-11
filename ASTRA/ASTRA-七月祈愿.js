@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         ASTRA-祈愿
+// @name         ASTRA-七月祈愿
 // @author       kakakumous
 // @version      1.0.1
-// @description  单抽：祈求七月之力 七连：祈求银辉七月之力 想看自己的倒霉程度 想看一群倒霉蛋 想看最倒霉的倒霉蛋|*祈求魔星之力 祈求粉晶魔星之力
+// @description  单抽：祈求七月之力 七连：祈求银辉七月之力 数据统计:想看自己的倒霉程度 排行：想看一群倒霉蛋 想看最倒霉的倒霉蛋
 // @timestamp    1693125392
 // 2023-08-27 16:36:32
 // @license      CC-BY-NC-SA 4.0
@@ -33,21 +33,15 @@ class Gacha{
     crystal;
 
     lastMoneyGacha;
-    lastCrystalGacha;
-
     todayMoneyGacha;
-    todayCrystalGacha;
 
     totalMoneyGacha;
-    totalCrystalGacha;
 
     totalNoGainInMoney;
     totalSsrInMoney;
 
     chainNoGainInMoney;//日清零&获取清零
-    chainNoRareInCrystal;//获取清零
-
-    noGainInMoneyDays;
+    noGainInMoneyDays;//七连水漂累计
 
     constructor(ctx) {
         let gachaInfoAll = JSON.parse(ext.storageGet("gachaInfo") || "{}");
@@ -57,17 +51,13 @@ class Gacha{
         this.crystal = seal.vars.intGet(ctx, `$m魔力水晶`)[0];
         //每天限制次数所需
         this.lastMoneyGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["lastMoneyGacha"] : seal.vars.intGet(ctx, `$m上次金币抽卡`)[0];
-        this.lastCrystalGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["lastCrystalGacha"]:0;
         this.todayMoneyGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["todayMoneyGacha"]:seal.vars.intGet(ctx, `$m今日金币抽卡次数`)[0];
-        this.todayCrystalGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["todayCrystalGacha"]:0;
         //统计数据
         this.totalMoneyGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["totalMoneyGacha"]:0;
-        this.totalCrystalGacha = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["totalCrystalGacha"]:0;
         this.totalNoGainInMoney = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["totalNoGainInMoney"]:seal.vars.intGet(ctx, `$m水漂累计`)[0];
         this.totalSsrInMoney = gachaInfoAll[this.userId]["totalSsrInMoney"] ? gachaInfoAll[this.userId]["totalSsrInMoney"]:seal.vars.intGet(ctx, `$m银辉馈赠`)[0];//增补的数据
         //保底
         this.chainNoGainInMoney = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["chainNoGainInMoney"]:seal.vars.intGet(ctx, `$m今日连续水漂次数`)[0];
-        this.chainNoRareInCrystal = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["chainNoRareInCrystal"]:0;
         this.noGainInMoneyDays = gachaInfoAll[this.userId] ? gachaInfoAll[this.userId]["noGainInMoneyDays"]:seal.vars.intGet(ctx, `$m七连水漂`)[0];
 
     }
@@ -92,19 +82,7 @@ class Gacha{
         seal.vars.intSet(this.ctx, "$m魔力水晶", this.crystal);
         ext.storageSet("gachaInfo", JSON.stringify(gachaInfoAll));
     }
-    saveCrystalGacha(){
-        let gachaInfoAll = JSON.parse(ext.storageGet("gachaInfo") || "{}");
-        if (!gachaInfoAll[this.userId]) {
-            gachaInfoAll[this.userId] = {};
-        }
-        gachaInfoAll[this.userId]["lastCrystalGacha"] = this.lastCrystalGacha;
-        gachaInfoAll[this.userId]["todayCrystalGacha"] = this.todayCrystalGacha;
-        gachaInfoAll[this.userId]["totalCrystalGacha"] = this.totalCrystalGacha;
-        gachaInfoAll[this.userId]["chainNoGainInCrystal"] = this.chainNoGainInCrystal;
-        gachaInfoAll[this.userId]["crystal"] = this.crystal;
-        seal.vars.intSet(this.ctx, "$m魔力水晶", this.crystal);
-        ext.storageSet("gachaInfo", JSON.stringify(gachaInfoAll));
-    }
+    
     moneyGachaCore(gainRate){
         let result = getRandomInt(0,100);
         if(result<gainRate){
