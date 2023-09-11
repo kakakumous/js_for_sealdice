@@ -1,16 +1,17 @@
 // ==UserScript==
 // @name         ASTRA-祈愿
 // @author       kakakumous
-// @version      1.0.0
-// @description  单抽：祈求七月之力 七连：祈求银辉七月之力|*祈求魔星之力 祈求粉晶七月之力
+// @version      1.0.1
+// @description  单抽：祈求七月之力 七连：祈求银辉七月之力 想看自己的倒霉程度 想看一群倒霉蛋 想看最倒霉的倒霉蛋|*祈求魔星之力 祈求粉晶魔星之力
 // @timestamp    1693125392
 // 2023-08-27 16:36:32
-// @license      MIT
+// @license      CC-BY-NC-SA 4.0
 // @homepageURL  https://github.com/kakakumous/js_for_sealdice
 // ==/UserScript==
 const MONEY_COST = 7;
 const GACHA_MULTI = 7;
 const MAX_MONEYGACHA_PERDAY = 7;
+const RANK_SHOW = 7;
 const moneyGachaResno = {
     1: "你的祈求之力太微弱了，『幸运』看不到你的诚意，无法给予你回应。",
     2: "祈求的力量已经黯淡，『幸运』今天似乎不会再回应你了。",
@@ -40,7 +41,7 @@ class Gacha{
     totalMoneyGacha;
     totalCrystalGacha;
 
-    todayNoGainInMoney;
+    totalNoGainInMoney;
 
     chainNoGainInMoney;//日清零&获取清零
     chainNoRareInCrystal;//获取清零
@@ -74,7 +75,8 @@ class Gacha{
             gachaInfoAll[this.userId] = {};
         }
         gachaInfoAll[this.userId]["name"] = this.ctx.player.name;
-        gachaInfoAll[this.userId]["groupId"] = this.ctx.group.groupId;
+        gachaInfoAll[this.userId]["platform"] = this.ctx.endPoint.platform;
+        gachaInfoAll[this.userId]["groupId"] = this.ctx.player.groupId;
         gachaInfoAll[this.userId]["lastMoneyGacha"] = this.lastMoneyGacha;
         gachaInfoAll[this.userId]["todayMoneyGacha"] = this.todayMoneyGacha;
         gachaInfoAll[this.userId]["totalMoneyGacha"] = this.totalMoneyGacha;
@@ -141,7 +143,7 @@ class Gacha{
     addNoGainInMoneyDays(res){    
         this.noGainInMoneyDays+=1;
         res+=`\f`+moneyGachaResno[10];
-        if(this.noGainInMoneyDays%7==0){
+        if(this.noGainInMoneyDays%MAX_MONEYGACHA_PERDAY==0){
             seal.vars.intSet(this.ctx, "$m过盈回赠", seal.vars.intGet(this.ctx, `$m过盈回赠`)[0]+1);
             res+=`\f`+moneyGachaResno[11];
         }
@@ -154,10 +156,10 @@ class Gacha{
         }
         const timestamp = (Date.parse(new Date())/1000);
         if(parseInt((this.lastMoneyGacha+28800)/86400)!=parseInt((timestamp+28800)/86400)){//判断newday
-            this.todayMoneyGacha=7;
+            this.todayMoneyGacha=GACHA_MULTI;
             this.chainNoGainInMoney=0;
         }else{
-            this.todayMoneyGacha+=7;
+            this.todayMoneyGacha+=GACHA_MULTI;
         }
         if(this.todayMoneyGacha>MAX_MONEYGACHA_PERDAY&&extraChance<GACHA_MULTI){
             return moneyGachaResno[2];//今日抽卡上限+额外次数不足拦截
@@ -165,11 +167,11 @@ class Gacha{
         
         //扣除消耗
         if(this.money<GACHA_MULTI*MONEY_COST){
-            seal.vars.intSet(this.ctx, "$m月光币抽卡次数", extraChance-7);
+            seal.vars.intSet(this.ctx, "$m月光币抽卡次数", extraChance-GACHA_MULTI);
         }else{
             this.money -= GACHA_MULTI*MONEY_COST;
         }
-        this.totalMoneyGacha += 7;
+        this.totalMoneyGacha += GACHA_MULTI;
         //开始抽卡流程
         this.lastMoneyGacha = timestamp;
         let luckLevel = CalcLuckLevel(this.ctx);
@@ -179,7 +181,7 @@ class Gacha{
         for(let i=0;i<MAX_MONEYGACHA_PERDAY;i++){
             resStr += `\n`+this.moneyGachaCore(gainRate);
         }
-        if(this.chainNoGainInMoney == 7){
+        if(this.chainNoGainInMoney == MAX_MONEYGACHA_PERDAY){
             resStr = this.addNoGainInMoneyDays(resStr);
         }
         this.saveMoneyGacha();
@@ -215,7 +217,7 @@ class Gacha{
         console.log(this.ctx.player.name+`此次抽卡获取率为`+gainRate);
         let resStr = this.moneyGachaCore(gainRate);
         
-        if(this.chainNoGainInMoney == 7){
+        if(this.chainNoGainInMoney == MAX_MONEYGACHA_PERDAY){
             resStr = this.addNoGainInMoneyDays(resStr);
         }
         this.saveMoneyGacha();
@@ -225,9 +227,10 @@ class Gacha{
 
 let ext = seal.ext.find("Astra_wish");
 if (!ext) {
-    ext = seal.ext.new("Astra_wish", "kakakumous", "1.0.0");
+    ext = seal.ext.new("Astra_wish", "kakakumous", "1.0.1");
     seal.ext.register(ext);
     ext.onNotCommandReceived = (ctx, msg) => {
+        //==========================================================================================抽卡执行
         if(msg.message == '祈求七月之力'){
             let gacha = new Gacha(ctx);
             seal.replyToSender(ctx, msg, gacha.singleMoneyGacha());
@@ -238,10 +241,85 @@ if (!ext) {
             seal.replyToSender(ctx, msg, gacha.multiMoneyGacha());
             return seal.ext.newCmdExecuteResult(true);
         }
+        //===========================================================================================数据统计
+        if(msg.message == '想看一群倒霉蛋'){
+            let arr=[];
+            let gachaInfoAll = JSON.parse(ext.storageGet("gachaInfo") || "{}");
+            let players = Object.keys(gachaInfoAll);
+            for(let i = 0 ; i < players.length ; i++){
+                let player=players[i];
+                if(gachaInfoAll[player]["platform"] !== ctx.endPoint.platform){
+                    continue;
+                }
+                if(gachaInfoAll[player]["name"] === undefined){
+                    arr.push([gachaInfoAll[player]["totalNoGainInMoney"], `无名冒险者`]);
+                    continue;
+                }
+                arr.push([gachaInfoAll[player]["totalNoGainInMoney"], gachaInfoAll[player]["name"]]);
+            }
+            arr = descValueArr(arr);
+            res = `重磅！打水漂高手榜火热竞争中！快来看看你是否榜上有名吧！\n小贴士：高分者可以获得精美小礼品一份哦！快快踊跃参与吧！`;
+            for(let i = 0;i < arr.length; i++){
+                if(i == RANK_SHOW)break;
+                switch(i){
+                    case 0: res += `\n🥇`;break;
+                    case 1: res += `\n🥈`;break;
+                    case 2: res += `\n🥉`;break;
+                    default:res += `\n`+(i+1)+`-`;
+                }
+                res += arr[i][1]+`~`+arr[i][0]+`次`;
+            }
+            seal.replyToSender(ctx, msg, res);
+            return seal.ext.newCmdExecuteResult(true);
+        }
+        if(msg.message == '想看最倒霉的倒霉蛋'){
+            let arr = [];
+            let gachaInfoAll = JSON.parse(ext.storageGet("gachaInfo") || "{}");
+            let players = Object.keys(gachaInfoAll);
+            for(let i = 0 ; i < players.length ; i++){
+                let player = players[i];
+                if(player === `UI:1001`){
+                    arr.push([gachaInfoAll[player]["totalNoGainInMoney"], `【非玩家】测试终端`]);
+                    continue;
+                }
+                if(gachaInfoAll[player]["name"] === undefined){
+                    arr.push([gachaInfoAll[player]["totalNoGainInMoney"], `无名冒险者`]);
+                    continue;
+                }
+                arr.push([gachaInfoAll[player]["totalNoGainInMoney"], gachaInfoAll[player]["name"]]);
+            }
+            arr = descValueArr(arr);
+            res = `重磅！打水漂高手榜火热竞争中！快来看看你是否榜上有名吧！\n小贴士：高分者可以获得精美小礼品一份哦！快快踊跃参与吧！`;
+            for(let i = 0;i < arr.length; i++){
+                if(i==RANK_SHOW)break;
+                switch(i){
+                    case 0: res += `\n👸🏿`;break;
+                    case 1: res += `\n👸🏾`;break;
+                    case 2: res += `\n👸🏽`;break;
+                    default:res += `\n`+(i+1)+`-`;
+                }
+                res += arr[i][1]+`~`+arr[i][0]+`次`;
+            }
+            seal.replyToSender(ctx, msg, res);
+            return seal.ext.newCmdExecuteResult(true);
+        }
+        if(msg.message == '想看自己的倒霉程度'){
+            let gachaInfoAll = JSON.parse(ext.storageGet("gachaInfo") || "{}");
+            let gachaInfo = gachaInfoAll[ctx.player.userId];
+            if(!gachaInfo){
+                seal.replyToSender(ctx, msg, ctx.player.name+`还没有使用月光币进行祈求过。`);
+                return seal.ext.newCmdExecuteResult(true);
+            }
+            res = `尊敬的客户<`+gachaInfo.name+`>，您的查询七月获取统计业务回复如下：\n~水漂/祈愿数：`+gachaInfo.totalNoGainInMoney+`/`+gachaInfo.totalMoneyGacha;
+            let rate = gachaInfo.totalNoGainInMoney/gachaInfo.totalMoneyGacha*100;
+            res += `\n~水漂率`+rate.toFixed(2)+`%`;
+            res += `\n这样就可以了吗？不继续努力的话可是会被拉开距离的哦？`;
+            seal.replyToSender(ctx, msg, res);
+        }
     }
 }
 
-//================================================================零散调用
+//零散调用
 
 function CalcLuckLevel(ctx){
     let luckLevel=0;
@@ -283,4 +361,17 @@ function getRandomInt(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function descValueArr(arr){//行首元素降序
+    if(arr.length <= 1){return arr;}
+    for (let i = 0; i < arr.length - 1; i++) {
+        for (let j = 0; j < arr.length - 1 - i; j++) {
+            if (arr[j][0] < arr[j + 1][0]) {
+                t = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = t;
+            }
+        }
+    }
+    return arr;
 }
