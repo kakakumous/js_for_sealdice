@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         道具使用for商店系统
 // @author       kakakumous
-// @version      1.1.0
+// @version      1.1.1
 // @description  【已有本插件升级请发送：.升级道具使用，新玩家可直接使用（应该），尚未全面测试，发现bug欢迎git留言】自用的道具使用dlc，高度参考并引用步棋商店系统插件，指令很多，骰主使用教程请移步github链接查看readme（还没更新，先看脚本里有啥吧）
 // @timestamp    1692412501
 // 2023-08-19 10:35:01
@@ -266,11 +266,11 @@ class UseItem{
             if(detailOverview){
                 restTimes = detailOverview.restTimes;
             }
-            if(restTimes < quantity){//TODO：测试实际效果 只测了使用1物品通过
-                let costQuantity = Math.floor((quantity-restTimes)/itemOverview.useTimes);
+            if(restTimes < quantity){//TODO：测试
+                let costQuantity = Math.floor((quantity-restTimes)/parseInt(itemOverview.useTimes));
                 console.log(`消耗数量：`+costQuantity);
                 backpack.removeItem(name, costQuantity);
-                restTimes = itemOverview.useTimes - restTimes;
+                restTimes = parseInt(itemOverview.useTimes) - restTimes;
             }else{
                 console.log(`消耗次数`);
                 restTimes = detailOverview.restTimes - quantity;
@@ -331,6 +331,13 @@ class ItemInfo {
             }
         }
         return null;
+
+    }
+    getOverviewByLoc(location) {
+        if(location<this.itemInfo.length){
+            return this.itemInfo[location];
+        }
+        return null;
     }
     placeItem(item) {
         for (let [i, v] of this.itemInfo.entries()) {
@@ -360,25 +367,49 @@ class ItemInfo {
             }
         }
     }
+    deleteItemByLoc(location){
+        this.itemInfo.splice(location,1);
+        this.save();
+        return;
+    }
+
+    presentAll(){
+        let res = ``;
+        for (let i =0; i < this.itemInfo.length ; i++) {
+            let v=this.itemInfo[i];
+            res+=`|${i}-[${v.category}]${v.name}|`;
+            if(res.length>2000)break;
+        }
+        return res;
+    }
     present(category, page) {
         if (this.itemInfo.length <= 0) {
             return "还没有任何物品信息";
         }
-        if(this.itemInfo.length<(page-1)*ITEMS_PER_PAGE-1){
-            return "这一页没有物品信息";
-        }
+        
         let arr = [];
-        for (let i = (page-1)*ITEMS_PER_PAGE ; i < page*ITEMS_PER_PAGE ; i++) {
+        let i = 0;
+        let thisPage = 0;//从第1页开始-0
+        while(thisPage < page){
+
             let v=this.itemInfo[i];
+            i++;
             if(v === undefined){
                 break;
             }
+
             if(category != `#` && v.category != category){
                 continue;
             }
-            let res=`~ ${v.name}`;
+            
+            if(arr.length == ITEMS_PER_PAGE){
+                thisPage++;
+                if(thisPage == page)break;
+                arr = [];
+            }
+            let res=`${i-1}~[${v.category}]${v.name}`;
             switch(v.useTimes){
-                case `#`:break;
+                case `#`:res += `，不可直接使用`;break;
                 case `!`:
                 case `！`:res += `，无使用次数限制`;break;
                 default:res += `，可使用${v.useTimes}次`;
@@ -389,26 +420,45 @@ class ItemInfo {
             if(v.cdTill != 0)res+=`-使用cd:${v.cdTill}小时`;
             arr.push(res);
         }
+
+        if(arr.length == 0){
+            return "这一页没有物品信息";
+        }
+
         return arr.join("\n");
     }
     update1_0_0To1_1_0(){
         for (let [i, v] of this.itemInfo.entries()) {
             if (this.itemInfo[i].effectType !== undefined) {
-                this.itemInfo[i].category = `道具`;
                 if(this.itemInfo[i].effectType != `#`){
+                    this.itemInfo[i].category = `道具`;
                     this.itemInfo[i].effect = this.itemInfo[i].effectType+this.itemInfo[i].effect;
                     this.itemInfo[i].useTimes = 1;
                 }else{
+                    this.itemInfo[i].category = `素材`;
                     this.itemInfo[i].effect = `#`;
                     this.itemInfo[i].useTimes = `#`;
                 }              
-                this.itemInfo[i].resMsg = this.itemInfo[i].useMsg;
+                this.itemInfo[i].resMsg = `#`;
                 this.itemInfo[i].itemRecive = `#`;
                 this.itemInfo[i].cdTill = 0;
                 delete this.itemInfo[i]["effectType"];
                 delete this.itemInfo[i]["ifStatus"];
             }
             
+        }
+        this.save();
+    }
+    autoUpdate(){//懒人用自动类型分拣 修正老的升级产生的数据库不准确
+        for (let [i, v] of this.itemInfo.entries()) {
+            if(this.itemInfo[i].useTimes == `#`){
+                this.itemInfo[i].category = `素材`;
+            }else{
+                this.itemInfo[i].category = `道具`;
+            }
+            if(this.itemInfo[i].useTimes == 1){
+                this.itemInfo[i].resMsg = `#`;
+            }
         }
         this.save();
     }
@@ -511,14 +561,15 @@ cmdupdItemInfo.solve = (ctx, msg, args) => {
     }
     let itemInfo = new ItemInfo();
     itemInfo.update1_0_0To1_1_0();
-    seal.replyToSender(ctx, msg, `执行成功，若物品信息数据库中存在旧数据会被更新：可使用的道具默认为一次性道具&所有旧数据的类别为“道具”`);
+    itemInfo.autoUpdate();
+    seal.replyToSender(ctx, msg, `执行成功，若物品信息数据库中存在旧数据会被更新`);
     return seal.ext.newCmdExecuteResult(true);
 };
 ext.cmdMap["升级道具使用"] = cmdupdItemInfo;
 
 let cmdAddItemInfo = seal.ext.newCmdItemInfo();
 cmdAddItemInfo.name = "AddItemInfo";
-cmdAddItemInfo.help = ".添加物品信息 <名称> <类别> <使用次数（！为永久）> <影响变量，例：$m金币+1，多个可用&（同时生效）或|（其一生效）隔开，&优先匹配 不支持括号 支持%表达）> <描述> <使用回执> <损失回执/cd未结束回执> <获取物品>  <使用冷却> <保持时长>（单位：小时）//仅限骰主使用";
+cmdAddItemInfo.help = ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金币+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）//仅限骰主使用";
 cmdAddItemInfo.solve = (ctx, msg, args) => {
     if (args.getArgN(1) === "help") {
         let ret = seal.ext.newCmdExecuteResult(true);
@@ -529,28 +580,34 @@ cmdAddItemInfo.solve = (ctx, msg, args) => {
         seal.replyToSender(ctx, msg, seal.formatTmpl(ctx, "无权限"));
         return seal.ext.newCmdExecuteResult(true);
     }
-    let name = args.getArgN(1);
-    let category = args.getArgN(2);
-    let useTimes = args.getArgN(3)||`#`;
-    let effect = args.getArgN(4)||`#`;
-    let discreption = args.getArgN(5)||`你也看不太出来这到底是什么东西。`;
-    let resMsg = args.getArgN(6)||`你使用了`+name;
-    let useMsg = args.getArgN(7)||`你使用了`+name;//最后一次使用触发
-    let itemRecive = args.getArgN(8)||`#`;
+    let name = args.getArgN(1).trim();
+    let category = args.getArgN(2).trim();
+    let useTimes = args.getArgN(3).trim()||`#`;
+    let effect = args.getArgN(4).trim()||`#`;
+    let discreption = args.getArgN(5).trim()||`你也看不太出来这到底是什么东西。`;
+    let resMsg = args.getArgN(6).trim()||`你使用了`+name;
+    let useMsg = args.getArgN(7).trim()||`你使用了`+name;//最后一次使用触发
+    let itemRecive = args.getArgN(8).trim()||`#`;
     let cdTill = parseInt(args.getArgN(9))||0;
     let upTime = parseInt(args.getArgN(10))||0;
 
     if (!name) {
-        seal.replyToSender(ctx, msg, ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金币+1，可用&或|隔开 支持%表达）> <描述> <使用回执> <损失回执/cd未结束回执> <获取物品>  <使用冷却> <保持时长>（单位：小时）");
+        seal.replyToSender(ctx, msg, ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金币+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）");
         return seal.ext.newCmdExecuteResult(true);
     }
     if (!category) {
-        seal.replyToSender(ctx, msg, "类别非空（用于分类检索） 参考：素材 食物 道具");
+        seal.replyToSender(ctx, msg, "类别非空（用于分类检索） 参考：素材 食物 药品 工具 武器 装备 钥匙 道具 珍藏");
         return seal.ext.newCmdExecuteResult(true);
     }
-    if ( (useTimes<=0 || isNaN(useTimes)) && (useTimes!=`#`||useTimes!=`!`||useTimes!=`！`)) {
-        seal.replyToSender(ctx, msg, "使用次数应为正整数或#（不可使用）、!（可永久使用）");
-        return seal.ext.newCmdExecuteResult(true);
+
+    if ( !(useTimes==`#` || useTimes == `!` || useTimes == `！`)) {
+        if(parseInt(useTimes)<=0){
+            seal.replyToSender(ctx, msg, "使用次数应为正整数或#（不可使用）、!（可永久使用）");
+            return seal.ext.newCmdExecuteResult(true);
+        }else{
+            useTimes = parseInt(useTimes);
+        }
+        
     }
     
     if (isNaN(cdTill) || isNaN(upTime) || cdTill<0 || upTime<0) {
@@ -569,7 +626,7 @@ cmdAddItemInfo.solve = (ctx, msg, args) => {
     }
     if(itemRecive != `#`)res += `使用后获取${itemRecive}`;
     if(effect != `#`)res += `\n效果：${effect}`;
-    if(upTime != 0)res+=`\n效果持续:${cdTill}小时`;
+    if(upTime != 0)res+=`\n效果持续:${upTime}小时`;
     if(cdTill != 0)res+=`\n使用cd:${cdTill}小时`;
 
     seal.replyToSender(ctx, msg, res);
@@ -596,7 +653,12 @@ cmddelItemInfo.solve = (ctx, msg, args) => {
         return seal.ext.newCmdExecuteResult(true);
     }
     let itemInfo = new ItemInfo();
-    itemInfo.deleteItem(name);
+    if(!isNaN(name) && parseInt(name)>=0){
+        itemInfo.deleteItemByLoc(name);
+    }else{
+        itemInfo.deleteItem(name);
+    }
+
     seal.replyToSender(ctx, msg, `执行成功，若物品信息数据库中存在该物品则会被删除`);
     return seal.ext.newCmdExecuteResult(true);
 };
@@ -624,7 +686,12 @@ cmdlistItemInfo.solve = (ctx, msg, args) => {
     }
 
     let itemInfo = new ItemInfo();
+
     let items = itemInfo.present(category, page);
+
+    if(category == `总览`){
+        items = itemInfo.presentAll();
+    }
 
     seal.replyToSender(ctx, msg, `物品一览<`+page+`>：\n${items}\n查看物品全部信息请.检索物品信息 <名称>`);
 
@@ -634,7 +701,7 @@ ext.cmdMap["物品一览"] = cmdlistItemInfo;
 
 let cmdsearchItemInfo = seal.ext.newCmdItemInfo();
 cmdsearchItemInfo.name = "searchItemInfo";
-cmdsearchItemInfo.help = ".检索物品信息 <名称> //检索物品信息，仅限骰主使用";
+cmdsearchItemInfo.help = ".检索物品信息 <名称/序号> //检索物品信息，仅限骰主使用";
 cmdsearchItemInfo.solve = (ctx, msg, args) => {
     if (args.getArgN(1) === "help") {
         let ret = seal.ext.newCmdExecuteResult(true);
@@ -647,15 +714,18 @@ cmdsearchItemInfo.solve = (ctx, msg, args) => {
     }
     let name = args.getArgN(1);
     if (!name) {
-        seal.replyToSender(ctx, msg, "参数错误。用法：.检索物品信息 <名称>");
+        seal.replyToSender(ctx, msg, "参数错误。用法：.检索物品信息 <名称/序号>");
         return seal.ext.newCmdExecuteResult(true);
     }
     let itemInfo = new ItemInfo();
     let v = itemInfo.getOverview(name);
+    if(!isNaN(name) && parseInt(name)>=0){
+        v=itemInfo.getOverviewByLoc(parseInt(name));
+    }
     if(v!=null){
         let res=`【${v.category}】${v.name}:${v.discreption}`;
         switch(v.useTimes){
-            case `#`:break;
+            case `#`:res += `\n不可直接使用`;break;
             case `!`:
             case `！`:res += `\n无使用次数限制`;break;
             default:res += `\n可使用${v.useTimes}次`;
@@ -667,9 +737,10 @@ cmdsearchItemInfo.solve = (ctx, msg, args) => {
         if(v.upTime != 0)res+=`\n效果持续:${v.upTime}小时`;
         if(v.cdTill != 0)res+=`\n使用cd:${v.cdTill}小时`;
 
+        res += `\n.添加物品信息 ${v.name} ${v.category} ${v.useTimes} ${v.effect} ${v.discreption} ${v.resMsg} ${v.useMsg} ${v.itemRecive} ${v.cdTill} ${v.upTime}`;
         seal.replyToSender(ctx, msg, res);
     }else{
-        seal.replyToSender(ctx, msg, `数据中目前没有这个物品。`);
+        seal.replyToSender(ctx, msg, `数据中目前没有这个物品/序号。`);
     }
     return seal.ext.newCmdExecuteResult(true);
 };
