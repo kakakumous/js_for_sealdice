@@ -491,7 +491,7 @@ class Rucksack {
         this.ctx = ctx;
         this.size = BASIC_BACKPACK_MAXITEMS + seal.vars.intGet(ctx, `$m额外背包位`)[0];
         this.items = itemAll[this.userId] ? itemAll[this.userId]["backpack"] : [];
-        this.money = seal.vars.intGet(ctx, `$m金币`)[0];
+        this.money = seal.vars.intGet(ctx, `$m金钱`)[0];
     }
     save() {
         let itemAll = JSON.parse(ext.storageGet("backpacks") || "{}");
@@ -500,13 +500,13 @@ class Rucksack {
         }
         itemAll[this.userId]["backpack"] = this.items;
         itemAll[this.userId]["money"] = this.money;
-        seal.vars.intSet(this.ctx, "$m金币", this.money);
+        seal.vars.intSet(this.ctx, "$m金钱", this.money);
         ext.storageSet("backpacks", JSON.stringify(itemAll));
     }
     sameValue(){//同步个人变量中影响背包的变量
         
         this.size =BASIC_BACKPACK_MAXITEMS + seal.vars.intGet(this.ctx, `$m额外背包位`)[0];
-        this.money = seal.vars.intGet(this.ctx, `$m金币`)[0];
+        this.money = seal.vars.intGet(this.ctx, `$m金钱`)[0];
 
         
     }
@@ -584,7 +584,7 @@ ext.cmdMap["升级道具使用"] = cmdupdItemInfo;
 
 let cmdAddItemInfo = seal.ext.newCmdItemInfo();
 cmdAddItemInfo.name = "AddItemInfo";
-cmdAddItemInfo.help = ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金币+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）//仅限骰主使用";
+cmdAddItemInfo.help = ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金钱+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）//仅限骰主使用";
 cmdAddItemInfo.solve = (ctx, msg, args) => {
     if (args.getArgN(1) === "help") {
         let ret = seal.ext.newCmdExecuteResult(true);
@@ -607,7 +607,7 @@ cmdAddItemInfo.solve = (ctx, msg, args) => {
     let upTime = parseFloat(args.getArgN(10))||0;
 
     if (!name) {
-        seal.replyToSender(ctx, msg, ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金币+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）");
+        seal.replyToSender(ctx, msg, ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金钱+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）");
         return seal.ext.newCmdExecuteResult(true);
     }
     if (!category) {
