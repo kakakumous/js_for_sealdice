@@ -2,7 +2,7 @@
 // @name         道具使用for商店系统
 // @author       kakakumous
 // @version      1.1.2
-// @description  【尚未全面测试，发现bug欢迎git留言】自用的道具使用dlc，高度参考并引用步棋商店系统插件，骰主指令
+// @description  【尚未全面测试，发现bug欢迎带日志截图git留言或海豹4群@作者，详细教程在github链接推荐骰主查看】自用的道具使用dlc，高度参考并引用步棋商店系统插件，骰主指令添加物品信息|删除物品信息|检索物品信息|物品一览，普通指令查看|使用，测试阶段指令（仅骰主）强制更改|强制获取|查看属性
 // @timestamp    1692412501
 // 2023-08-19 10:35:01
 // @license      CC-BY-NC-SA 4.0
@@ -560,7 +560,7 @@ class Rucksack {
 //=======================================================================================骰主对物品信息的操作
 let cmdupdItemInfo = seal.ext.newCmdItemInfo();
 cmdupdItemInfo.name = "updItemInfo";
-cmdupdItemInfo.help = ".升级道具使用 YES//从1.0.x升级到1.1.x，升级前请备份数据库防止发生不可挽回的错误";
+cmdupdItemInfo.help = ".升级道具使用 YES//从1.0.x升级到1.1.x，1.1.x更新则无需使用指令升级，升级前请备份数据库防止发生不可挽回的错误";
 cmdupdItemInfo.solve = (ctx, msg, args) => {
     if (args.getArgN(1) === "help") {
         let ret = seal.ext.newCmdExecuteResult(true);
@@ -577,7 +577,6 @@ cmdupdItemInfo.solve = (ctx, msg, args) => {
     }
     let itemInfo = new ItemInfo();
     itemInfo.update1_0_0To1_1_0();
-    itemInfo.autoUpdate();
     seal.replyToSender(ctx, msg, `执行成功，若物品信息数据库中存在旧数据会被更新`);
     return seal.ext.newCmdExecuteResult(true);
 };
