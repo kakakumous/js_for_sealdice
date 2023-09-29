@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         道具使用for商店系统
 // @author       kakakumous
-// @version      1.1.1
-// @description  【已有本插件升级请发送：.升级道具使用，新玩家可直接使用（应该），尚未全面测试，发现bug欢迎git留言】自用的道具使用dlc，高度参考并引用步棋商店系统插件，指令很多，骰主使用教程请移步github链接查看readme（还没更新，先看脚本里有啥吧）
+// @version      1.1.2
+// @description  【尚未全面测试，发现bug欢迎git留言】自用的道具使用dlc，高度参考并引用步棋商店系统插件，骰主指令
 // @timestamp    1692412501
 // 2023-08-19 10:35:01
-// @license      MIT
+// @license      CC-BY-NC-SA 4.0
 // @homepageURL  https://github.com/kakakumous/js_for_sealdice
 // ==/UserScript==
 
@@ -28,7 +28,7 @@ const UseErrno = {
     2: "背包中此物品数量/剩余使用次数不足",
     3: "此物品尚未实装",
     4: "啊哦 实装的effect出了点问题 请敲打骰主",
-    5: "冥冥中一种神奇的直觉让你放弃了使用（有更强力的效果无法覆盖）",
+    5: "有更强力的效果,无法覆盖",
     6: "这个物品不能被使用",
     7: "这个物品使用需定义影响变量的最大值",
     8: "这个物品现在还不能使用（存在使用冷却）",
@@ -73,8 +73,8 @@ class UseItem{
     placeDetail(detail) {
         for (let [i, v] of this.details.entries()) {
             if (v.name === detail.name) {
-                this.details[i].cdTillTime == detail.cdTillTime;
-                this.details[i].restTimes == detail.restTimes;
+                this.details[i].cdTillTime = detail.cdTillTime;
+                this.details[i].restTimes = detail.restTimes;
                 this.save();
                 return 0;
             }
@@ -155,7 +155,6 @@ class UseItem{
             }else{
                 num=parseFloat(effect);
             }
-            console.log(num);
             switch(opType){
                 case `=`:new_effect=num;break;
                 case `+`:new_effect=old_effect+num*quantity;break;
@@ -166,7 +165,7 @@ class UseItem{
             if(effect_MAX!=-1&&effect_MAX<new_effect){
                 seal.vars.intSet(mctx, effectType,effect_MAX);
             }else{
-                seal.vars.intSet(mctx, effectType,new_effect);
+                seal.vars.intSet(mctx, effectType,parseInt(new_effect));
             }
             console.log(effectType+`=`+seal.vars.intGet(mctx, effectType)[0]);
         }
@@ -228,9 +227,6 @@ class UseItem{
         }
         let unUseQuantity=sackOverview.quantity;
         
-        if(!itemOverview){
-            return 3;
-        }
         if(itemOverview.useTimes===`#`){
             return 6;
         }
@@ -238,7 +234,7 @@ class UseItem{
             restTimes=detailOverview.restTimes;
             if(detailOverview.restTimes>0)unUseQuantity--;
         }
-        console.log(`当前剩余次数${restTimes},背包内还有${unUseQuantity}个可用`);
+        console.log(`当前剩余次数${restTimes},背包内还有${unUseQuantity}个使用次数完整的。`);
 
         if(!isNaN(itemOverview.useTimes) && itemOverview.useTimes * unUseQuantity + restTimes < quantity){
             return 2;
@@ -249,8 +245,8 @@ class UseItem{
             if(detailOverview && timestamp<detailOverview.cdTillTime)return 8;
             if(quantity>1)return 10;
         }
-        if(itemOverview.itemRecive!=`#`){//存在使用后增加物品-对方的包
-            //TODO
+        if(itemOverview.itemRecive!=`#`){
+            //TODO:使用后获取物品
             return 9;
         }
         return 0;
@@ -266,26 +262,46 @@ class UseItem{
             if(detailOverview){
                 restTimes = detailOverview.restTimes;
             }
-            if(restTimes < quantity){//TODO：测试
-                let costQuantity = Math.floor((quantity-restTimes)/parseInt(itemOverview.useTimes));
-                console.log(`消耗数量：`+costQuantity);
-                backpack.removeItem(name, costQuantity);
-                restTimes = parseInt(itemOverview.useTimes) - restTimes;
+            console.log(`剩余次数：`+restTimes+`,指定数量：`+quantity);
+            if(restTimes < quantity){//当前剩余次数不足以支撑使用
+                let costQuantity = Math.ceil((quantity-restTimes)/itemOverview.useTimes);
+                backpack.removeItem(name, costQuantity-1);
+                restTimes = ((costQuantity*itemOverview.useTimes)+restTimes) - quantity;
+                if(restTimes==0){
+                    backpack.removeItem(name, 1);
+                }
+                console.log(`消耗数量：`+costQuantity+`,剩余次数：`+restTimes);
             }else{
-                console.log(`消耗次数`);
-                restTimes = detailOverview.restTimes - quantity;
+                if(detailOverview){
+                    restTimes = detailOverview.restTimes - quantity;
+                    if(restTimes==0){
+                        backpack.removeItem(name, 1);
+                    }
+                    console.log(`消耗次数,剩余次数：`+restTimes);
+                }
             }
         }
 
         //3.cd刷新
+        const timestamp = Date.parse(new Date())/1000;//10位 秒级时间戳
         if(itemOverview.cdTill!=0){
-            const timestamp = Date.parse(new Date())/1000;//10位 秒级时间戳
             let cdHours = itemOverview.cdTill;
-            cdTillTime=timestamp+cdHours*3600;
+            cdTillTime=timestamp+parseInt(cdHours*3600);
         }
-        this.placeDetail({name, restTimes, cdTillTime});
+        
         //4.TODO:获取物品
-
+        //5.写回detail
+        if(detailOverview&&restTimes==0&&itemOverview.cdTill==0){
+            console.log(`删除本物品detail`);
+            this.deleteDetail(name);
+            return;
+        }
+        
+        if((!isNaN(itemOverview.useTimes)&&itemOverview.useTimes!=1)||itemOverview.cdTill!=0){
+            console.log(`更新/添加本物品detail：name：${name},restTimes:${restTimes},cdTillTime:${cdTillTime}`);
+            this.placeDetail({name, restTimes, cdTillTime});
+        }   
+        
     }
     use(backpack, useItem, itemOverview, name, quantity, mctx){
         let sackOverview = backpack.getOverview(name);
@@ -588,8 +604,8 @@ cmdAddItemInfo.solve = (ctx, msg, args) => {
     let resMsg = args.getArgN(6).trim()||`你使用了`+name;
     let useMsg = args.getArgN(7).trim()||`你使用了`+name;//最后一次使用触发
     let itemRecive = args.getArgN(8).trim()||`#`;
-    let cdTill = parseInt(args.getArgN(9))||0;
-    let upTime = parseInt(args.getArgN(10))||0;
+    let cdTill = parseFloat(args.getArgN(9))||0;
+    let upTime = parseFloat(args.getArgN(10))||0;
 
     if (!name) {
         seal.replyToSender(ctx, msg, ".添加物品信息 <名称> <类别> <使用次数（！为永久，#为不可使用）> <影响变量，例：$m金币+1，可用&或|隔开 支持%表达）> <描述> <非最后一次使用回执> <损失回执> <获取物品> <使用冷却> <保持时长>（单位：小时）");
@@ -601,11 +617,11 @@ cmdAddItemInfo.solve = (ctx, msg, args) => {
     }
 
     if ( !(useTimes==`#` || useTimes == `!` || useTimes == `！`)) {
-        if(parseInt(useTimes)<=0){
+        if(parseFloat(useTimes)<=0){
             seal.replyToSender(ctx, msg, "使用次数应为正整数或#（不可使用）、!（可永久使用）");
             return seal.ext.newCmdExecuteResult(true);
         }else{
-            useTimes = parseInt(useTimes);
+            useTimes = parseFloat(useTimes);
         }
         
     }
@@ -808,15 +824,21 @@ cmduseItem.solve = (ctx, msg, args) => {
     let useItem = new UseItem(ctx);
     let itemOverview = itemInfo.getOverview(name);
     let detailOverview = useItem.getOverview(name);
+    let restTimes_old = 0;
+    if (!itemOverview) {
+        seal.replyToSender(ctx, msg, `使用失败：${UseErrno[3]}`);
+        return seal.ext.newCmdExecuteResult(true);
+    }
+    if(detailOverview){
+        restTimes_old = detailOverview.restTimes;
+    }
     let retNum = useItem.use(backpack, useItem, itemOverview, name, quantity, mctx);
     if (retNum != 0) {
         seal.replyToSender(ctx, msg, `使用失败：${UseErrno[retNum]}`);
     }
     else {
-        if(isNaN(itemOverview.useTimes)){
-            if(quantity>=detailOverview.restTimes){
-                seal.replyToSender(ctx, msg, itemOverview.useMsg);
-            }
+        if(!isNaN(itemOverview.useTimes)&&(itemOverview.useTimes==1||(detailOverview&&restTimes_old<=quantity)||itemOverview.useTimes<=quantity)){
+            seal.replyToSender(ctx, msg, itemOverview.useMsg);
         }else{
             seal.replyToSender(ctx, msg, itemOverview.resMsg);
         }
