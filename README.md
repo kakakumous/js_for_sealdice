@@ -1,7 +1,7 @@
 # js_for_sealdice
 kakakumous为[海豹骰](https://github.com/sealdice/sealdice-core)编写的JavaScript扩展文件仓库。
 私货是打算做文字交互rpg插件集，由于负责剧本的文案同学跑路本项目鬼了> <，现交出通用版本方便大家玩耍，如有问题沟通可在海豹4群捕捉本人私聊，各模块以依赖文件为核心，可分离执行，按需下载。
-</br>扫码投喂↓
+</br>生活艰难，扫码投喂↓
 </br><img src="https://github.com/kakakumous/js_for_sealdice/blob/main/thankU!.JPG" width = 300 height = 300>
 ## 已完成扩展
 ### 每日抽卡for商店系统（通用版）.js
