@@ -5,7 +5,7 @@ kakakumous为[海豹骰](https://github.com/sealdice/sealdice-core)编写的Java
 </br><img src="https://github.com/kakakumous/js_for_sealdice/blob/main/thankU!.JPG" width = 300 height = 300>
 ## 已完成扩展
 ### 每日抽卡for商店系统（通用版）.js
-当前最新版本为1.0.1，私货经历过从豹语转js的迭代和群友三个月每天使用的高强度测试，很可靠，如果出现问题那一定是改通用手滑了的问题）））
+当前最新版本为1.0.1，私货经历过从豹语转js的迭代和群友三个月每天使用的高强度测试，很可靠，如果出现问题那一定是改通用手滑了的问题请留言/在群里抓我改）））
 抽卡获得的奖励不进背包而是以变量形式存在海豹的map中，另有开箱插件可以开启奖励（目前还是私货没有转通用）
 #### 可使用指令
 - 抽一下//单抽
