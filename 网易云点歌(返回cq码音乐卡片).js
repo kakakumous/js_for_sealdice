@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云点歌(返回cq码音乐卡片)
 // @author       kakakumous
-// @version      1.0.0
+// @version      1.0.1
 // @description  基于星尘的点歌插件二改换了api,更新token打开本文件看教程。使用方法：".网易云 <歌名 (作者)>"
 // @timestamp    1713891616
 // 2024-04-24 01:00:16
@@ -32,6 +32,11 @@ const cmdCloudMusic = seal.ext.newCmdItemInfo();
       default: {
         if (!val) {
           seal.replyToSender(ctx, msg, `要输入歌名啊...`);
+        }
+        let t = 2;
+        while(cmdArgs.getArgN(t)||t>20){//最大不超过20词应该没啥问题吧（默）
+          val =val+" "+cmdArgs.getArgN(t);
+          t++;
         }
         let musicName = val;
         let url =
