@@ -1,0 +1,32 @@
+enable: true
+interval: 0
+items:
+    - enable: true
+      conditions:
+        - condType: textMatch
+          matchType: matchExact
+          value: 打卡签到
+      results:
+        - resultType: replyToSender
+          delay: 0
+          message:
+            - - |-
+                {% if ($m打卡+28800) / 86400 !=($tTimestamp+28800) / 86400  {$t标记=1} else {$t标记=0};
+                if $t标记==1{if ($m打卡+28800)/86400==($tTimestamp+28800)/86400-1 {$m连签=$m连签+1}
+                            else {$m连签=1}};
+                if $t标记==1 {$m打卡=$tTimestamp};
+                if $t标记==1 {$m累计打卡天数=$m累计打卡天数+1};
+                if $t标记==1 {$m金钱=$m金钱+100};
+                if $t标记==1 {$t输出=`{$t玩家}签到的第{$m累计打卡天数}天，这是你的100金钱！你现在有{$m金钱}金钱，不过听说一直连续签到会发水晶来着？`};
+                if $t标记!=1 {$t输出=`不行不行，我记得你已经签到过啦！不能顺手“签”羊哦！`};
+                if $m连签%7==0&&$t标记==1 {$m水晶=$m水晶+1;$t输出2=`\f恭喜你！连续签到7天会有额外奖励水晶一颗哦！就是说你现在有{$m水晶}水晶了！`} else {$t输出2=""}
+                 %}
+                {$t输出}{$t输出2}
+              - 1
+name: 打卡.yaml
+author:
+    - kakakumous
+version: ""
+createTimestamp: 1661343727
+updateTimestamp: 1661343727
+desc: ""
