@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         商店系统（基于1.0.0的私货版）
 // @author       原作：檀轶步棋|魔改:kakakumous
-// @version      1.0.5
+// @version      1.0.6
 // @timestamp    1686102732
 // @license      CC-BY-NC-SA 4.0
-// @description  原作更新到1.2+了至少，能下到原作不需要这么多花活功能的还是在群里下。指令仍旧是上架、下架、购买、出售、丢弃、展示,骰主作弊：强制获取，支持了多商店多币种（需脚本内替换定义，有一定门槛（虽然本来就是纯自用）），为了和谐私货信息新币种只是叫水晶（什么手游）。和道具使用的联动：可以分页分类查看背包内道具。
+// @description  可配置项在文件顶部文本编辑器打开按需改。原作更新到1.2+了至少，能下到原作不需要这么多花活功能的还是在群里下。指令仍旧是上架、下架、购买、出售、丢弃、展示,骰主作弊：强制获取，支持了多商店多币种（需脚本内替换定义，有一定门槛（虽然本来就是纯自用）），为了和谐私货信息新币种只是叫水晶（什么手游）。和道具使用的联动：可以分页分类查看背包内道具。
 // @homepageURL  https://github.com/kakakumous/js_for_sealdice
 // ==/UserScript==
 
-const RETIRE=0.8;//售出店内已有物品打折比例 跟随Shop
+//因为海豹目前取数值参数api只有intGet所以算完之后是向上取整的，请不要上架定价带小数的商品，算钱会出问题
+
+const RETIRE=0.8;//售出店内已有物品打折比例，算完向上取整
+const IF_REPLE=true;//售出物品是否在商店货架中补货
 const BASIC_BACKPACK_MAXITEMS=50;//基础背包格数 跟随Rucksack
 const ITEM_MAX_NUM=999;//最大堆叠数量 跟随Rucksack
 let ext = seal.ext.find("shop");
@@ -25,7 +28,7 @@ const TradeErrno = {
     5: "背包中此物品数量不足",
     6: "背包已满，不能再放入物品",
     7: "你可拥有的此物品数量达到上限",
-    8: "此商店中没有这个商品，无法出售"
+    8: "商店中没有这个商品，无法出售"
 };
 class Shop {
     goods;
@@ -259,7 +262,9 @@ class Rucksack {
         seal.vars.intSet(this.ctx, `$m`+costType, cash);
         if(costType == `金钱`)this.money = cash;
         if(costType == `水晶`)this.crystal = cash;
-        shop.placeItem({ name, quantity, price });
+        if(IF_REPLE){
+            shop.placeItem({ name, quantity, price });
+        }
         this.removeItem(name, quantity);
         return 0;
     }
@@ -354,9 +359,10 @@ cmdSell.solve = (ctx, msg, args) => {
         ret.showHelp = true;
         return ret;
     }
-    let name = args.getArgN(1);
-    let quantity = parseInt(args.getArgN(2)) || 1;
-    if (!name || !quantity || quantity <= 0) {
+    let shopType = args.getArgN(1);
+    let name = args.getArgN(2);
+    let quantity = parseInt(args.getArgN(3)) || 1;
+    if ( !shopType || !name || !quantity || quantity <= 0) {
         seal.replyToSender(ctx, msg, "参数错误。用法：.出售 <商店类型（shop）> <名称> <数量(大于0，默认为1)>");
         return seal.ext.newCmdExecuteResult(true);
     }
@@ -370,13 +376,13 @@ cmdSell.solve = (ctx, msg, args) => {
         retNum = 8;
     }
     else {
-        price = shopOverview.price*RETIRE;
+        price = Math.ceil(shopOverview.price*RETIRE);
         sellMsg = `你以${price}的单价卖出了商品！`;
         retNum = backpack.sell(shop, name, price, quantity);
     }
     
     if (retNum != 0) {
-        seal.replyToSender(ctx, msg, `交易时发生错误：${TradeErrno[retNum]}`);
+        seal.replyToSender(ctx, msg, `交易时发生错误：${shopType}${TradeErrno[retNum]}`);
     }
     else {
         seal.replyToSender(ctx, msg, sellMsg + `\n账户余额: 金钱(${backpack.money})`);
