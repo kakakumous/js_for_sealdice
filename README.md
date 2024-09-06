@@ -4,7 +4,11 @@ kakakumous为[海豹骰](https://github.com/sealdice/sealdice-core)编写的Java
 </br>生活艰难，扫码投喂↓
 </br><img src="https://github.com/kakakumous/js_for_sealdice/blob/main/thankU!.JPG" width = 300 height = 300>
 ## 已完成扩展
-插件低耦合高内聚，可独立工作，依赖仅代表更全的功能和部分代码借用来源。
+插件低耦合高内聚，可独立工作，依赖仅代表更全的功能和部分代码借用来源。</br>
+- [商店魔改版](https://github.com/kakakumous/js_for_sealdice?tab=readme-ov-file#%E6%B5%B7%E8%B1%B9_%E5%95%86%E5%BA%97%E6%8F%92%E4%BB%B6v100-by%E6%AD%A5%E6%A3%8B%E9%AD%94%E6%94%B9v106js)
+- [每日抽卡for商店系统](https://github.com/kakakumous/js_for_sealdice#%E6%AF%8F%E6%97%A5%E6%8A%BD%E5%8D%A1for%E5%95%86%E5%BA%97%E7%B3%BB%E7%BB%9F%E9%80%9A%E7%94%A8%E7%89%88js)
+- [道具使用for商店系统](https://github.com/kakakumous/js_for_sealdice#%E9%81%93%E5%85%B7%E4%BD%BF%E7%94%A8for%E5%95%86%E5%BA%97%E7%B3%BB%E7%BB%9F%E9%80%9A%E7%94%A8%E7%89%88js)
+- [网易云点歌](https://github.com/kakakumous/js_for_sealdice#%E7%BD%91%E6%98%93%E4%BA%91%E7%82%B9%E6%AD%8C%E8%BF%94%E5%9B%9Ecq%E7%A0%81%E9%9F%B3%E4%B9%90%E5%8D%A1%E7%89%87js)
 ### 海豹_商店插件(v.1.0.0) by步棋+魔改v1.0.6.js
 原版文件：海豹_商店插件by[步棋](https://github.com/oissevalt).js
 </br>此魔改版本拓展了商店支持的货币种类（多商店），优化了背包展示（支持物品分类需安装道具使用for商店系统）。但由于最初参考的依赖文件版本仅v1.0.0，缺失了原版v1.2+的新机能。由于个人使用不需要新机能不愿费力再改，如骰主既需要原版新版本功能，又对魔改版的特性割舍不下，可以同时装载两个商店系统并【禁用掉你不需要的那个冲突指令】。
@@ -83,5 +87,5 @@ kakakumous为[海豹骰](https://github.com/sealdice/sealdice-core)编写的Java
   ```
   若有影响这个属性的其它因素（例如已经使用了效果更强的道具且未到时限）导致$m运气等级_upTime大于当前时间，且新的层数小于旧层数，使用会被拦截。
 ### 网易云点歌(返回cq码音乐卡片).js
-（请注意，由于是以音乐卡片形式返回，使用gocq的海豹老用户才能正常使用本插件。新版海豹基于ntqq协议使用的拉格兰等新框架目前暂不支持此功能。但是现在全面gocq毕业的情况下这个文件重出江湖之日也许是等ntqq支持音乐卡片（悲））
+（请注意，由于是以音乐卡片形式返回，现在只有使用gocq的海豹老用户才能正常使用本插件。新版海豹基于ntqq协议使用的拉格兰等新框架目前暂不支持此功能。但是现在全面gocq毕业的情况下这个插件重出江湖之日也许是等ntqq支持音乐卡片（悲））
 - .网易云 <歌名>//网易云点歌 需要在脚本内维护api的token->其实也能发送指令更新但是懒得做，时间成本上不如手动改
